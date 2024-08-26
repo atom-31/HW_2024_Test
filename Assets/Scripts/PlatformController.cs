@@ -9,9 +9,9 @@ using UnityEngine.Networking;
 public class PlatformController : MonoBehaviour
 {
     public GameObject platformPrefab;
-    public Vector3 startingPosition = new Vector3(4.5f, 2.3f, 4.5f);
-    public int maxPlatforms = 2;
-    public Vector2 lifeRange;
+    private Vector3 startingPosition = new Vector3(4.5f, 2.3f, 4.5f);
+    private int maxPlatforms = 2;
+    private Vector2 lifeRange;
 
     private Queue<GameObject> activePlatforms = new Queue<GameObject>();
     private Vector3 lastPosition;
@@ -20,17 +20,75 @@ public class PlatformController : MonoBehaviour
 
     private float minLifetime;
     private float maxLifetime;
-    public float spawnTime;
+    private float spawnTime;
 
     public string jsonUrl = "https://s3.ap-south-1.amazonaws.com/superstars.assetbundles.testbuild/doofus_game/doofus_diary.json";
 
+    public TextMeshProUGUI scoreText; 
+    private int score = -1;
+
     private void Start()
     {
-        StartCoroutine(FetchAndParseJson());
+
         platformSize = platformPrefab.GetComponent<Renderer>().bounds.size.x;
         previousPosition = startingPosition - Vector3.one;
+        StartCoroutine(FetchAndParseJson());
+        
+    }
+
+    private IEnumerator FetchAndParseJson()
+    {
+        UnityWebRequest request = UnityWebRequest.Get(jsonUrl);
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
+        {
+            Debug.LogError("Error fetching JSON data: " + request.error);
+        }
+        else
+        {
+            string json = request.downloadHandler.text;
+            Debug.Log("Raw JSON: " + json);
+
+            // First, try to parse the entire JSON
+            DoofusDiary diary = JsonUtility.FromJson<DoofusDiary>(json);
+            Debug.Log("Diary: " + diary);
+
+            if (diary != null && diary.pulpit_data != null)
+            {
+                minLifetime = diary.pulpit_data.min_pulpit_destroy_time;
+                maxLifetime = diary.pulpit_data.max_pulpit_destroy_time;
+                spawnTime = diary.pulpit_data.pulpit_spawn_time;
+
+
+                lifeRange = new Vector2(minLifetime, maxLifetime);
+            }
+            else
+            {
+                Debug.LogError("Failed to parse JSON into DoofusDiary object. Attempting manual parse.");
+
+                // If the above fails, try to parse just the pulpit_data
+                PulpitData pulpitData = JsonUtility.FromJson<PulpitData>(json);
+
+                if (pulpitData != null)
+                {
+                    Debug.Log("Data" + pulpitData);
+                    minLifetime = pulpitData.min_pulpit_destroy_time;
+                    maxLifetime = pulpitData.max_pulpit_destroy_time;
+                    spawnTime = pulpitData.pulpit_spawn_time;
+
+
+                    lifeRange = new Vector2(minLifetime, maxLifetime);
+                }
+                else
+                {
+                    Debug.LogError("Failed to parse JSON into PulpitData object. Raw JSON: " + json);
+                }
+            }
+        }
         SpawnStartingPlatform();
         StartCoroutine(SpawnPlatforms());
+        UpdateScore();
     }
 
     [System.Serializable]
@@ -75,6 +133,7 @@ public class PlatformController : MonoBehaviour
         StartCoroutine(DestroyPlatformAfterLifetime(platform));
         previousPosition = lastPosition;
         lastPosition = spawnPosition;
+        UpdateScore();
     }
 
     private Vector3 GetAdjacentPosition()
@@ -127,56 +186,12 @@ public class PlatformController : MonoBehaviour
             Destroy(platform);
         }
     }
-    private IEnumerator FetchAndParseJson()
+
+    private void UpdateScore()
     {
-        UnityWebRequest request = UnityWebRequest.Get(jsonUrl);
-        yield return request.SendWebRequest();
-
-        if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
-        {
-            Debug.LogError("Error fetching JSON data: " + request.error);
-        }
-        else
-        {
-            string json = request.downloadHandler.text;
-            Debug.Log("Raw JSON: " + json);
-
-            // First, try to parse the entire JSON
-            DoofusDiary diary = JsonUtility.FromJson<DoofusDiary>(json);
-            Debug.Log("Diary: " + diary);
-
-            if (diary != null && diary.pulpit_data != null)
-            {
-                minLifetime = diary.pulpit_data.min_pulpit_destroy_time;
-                maxLifetime = diary.pulpit_data.max_pulpit_destroy_time;
-                spawnTime = diary.pulpit_data.pulpit_spawn_time;
-
-
-                lifeRange = new Vector2(minLifetime, maxLifetime);
-            }
-            else
-            {
-                Debug.LogError("Failed to parse JSON into DoofusDiary object. Attempting manual parse.");
-
-                // If the above fails, try to parse just the pulpit_data
-                PulpitData pulpitData = JsonUtility.FromJson<PulpitData>(json);
-
-                if (pulpitData != null)
-                {
-                    Debug.Log("Data" + pulpitData);
-                    minLifetime = pulpitData.min_pulpit_destroy_time;
-                    maxLifetime = pulpitData.max_pulpit_destroy_time;
-                    spawnTime = pulpitData.pulpit_spawn_time;
-
-
-                    lifeRange = new Vector2(minLifetime, maxLifetime);
-                }
-                else
-                {
-                    Debug.LogError("Failed to parse JSON into PulpitData object. Raw JSON: " + json);
-                }
-            }
-        }
+        score += 1;  
+        scoreText.text = "Score: " + score.ToString(); 
     }
+
 }
 

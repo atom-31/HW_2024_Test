@@ -5,7 +5,7 @@ using UnityEngine.Networking;
 
 public class PulpitMovement : MonoBehaviour
 {
-    public float speed;
+    private float speed;
     public string jsonUrl = "https://s3.ap-south-1.amazonaws.com/superstars.assetbundles.testbuild/doofus_game/doofus_diary.json";
     void Start()
     {
