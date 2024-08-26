@@ -10,7 +10,6 @@ public class PlatformAnimator : MonoBehaviour
         if (animator != null)
         {
             animator.SetBool("Entry", true);
-            Debug.LogError("Set");
         }
     }
 
@@ -19,7 +18,6 @@ public class PlatformAnimator : MonoBehaviour
         if (animator != null)
         {
             animator.SetBool("Entry", false);
-            Debug.LogError("Destroyed");
         }
     }
 }
