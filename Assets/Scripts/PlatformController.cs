@@ -190,7 +190,7 @@ public class PlatformController : MonoBehaviour
     private void UpdateScore()
     {
         score += 1;  
-        scoreText.text = "Score: " + score.ToString(); 
+        scoreText.text = score.ToString(); 
     }
 
 }
