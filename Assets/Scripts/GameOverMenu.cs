@@ -4,6 +4,12 @@ using UnityEngine.SceneManagement;
 public class GameOverMenu : MonoBehaviour
 {
     public GameObject gameOverUI;
+    public AudioSource gameOverAudioSource;
+
+    private void Awake()
+    {
+        gameOverAudioSource = GetComponent<AudioSource>();  
+    }
 
     void Start()
     {
@@ -19,10 +25,19 @@ public class GameOverMenu : MonoBehaviour
         {
             gameOverUI.SetActive(true);
             Time.timeScale = 0f;
+
+            if (gameOverAudioSource != null)
+            {
+                gameOverAudioSource.Play();
+            }
+            else
+            {
+                Debug.Log("Eror Playing Audio!");
+            }
         }
         else
         {
-            Debug.LogError("GameOverUI is null or has been destroyed.");
+            Debug.LogError("GameOverUI is null");
         }
     }
 
